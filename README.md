@@ -1,2 +1,16 @@
 # WindowWrapper
 Work in progress. Just converting some Win Functions and code snippets into an Object.Property wrapper because I'm lazy.
+
+### Example
+```
+Run "Notepad"
+WinWait "ahk_exe notepad.exe"
+NotepadWrapper := WindowWrapperClass("ahk_exe notepad.exe", True)
+; Note: NotepadWrapper is saving whatever window's HWND it finds.
+; Note2: the 2nd parameter being True will save the WinTitle and make "NotepadWrapper.isExist" automatically search for a new notepad window if it can no longer find the original hwnd.
+NotepadWrapper.isAlwaysOnTop := True ; sets this Window to be always on top
+
+#HotIf NotepadWrapper.isExist
+F1:: NotepadWrapper.x := 200
+F2:: NotepadWrapper.x := 400
+F3:: Msgbox(NotepadWrapper.x)
