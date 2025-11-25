@@ -1,0 +1,77 @@
+Class WindowWrapper {
+    __New(WinTitle, Boolean_AutoFindThisCritiera?){
+        if IsSet(Boolean_AutoFindThisCritiera)
+            this.AutoFindThisCriteria := WinTitle
+        this.Hwnd := WinExist(WinTitle)
+    }
+    AutoFindThisCriteria := Unset
+    Hwnd := ""
+    Title{
+        Get=> WinGetTitle(this.Hwnd)
+        Set=> WinSetTitle(Value, this.Hwnd)
+    }
+    X{
+        Get=> (WinGetPos(&GetValue,,,, this.Hwnd), GetValue)
+        Set=> (WinMove(Value,,,, this.Hwnd))
+    }
+    Y{
+        Get=> (WinGetPos(, &GetValue,,, this.Hwnd), GetValue)
+        Set=> (WinMove(,Value,,, this.Hwnd))
+    }
+    W{
+        Get=> (WinGetPos(,, &GetValue,, this.Hwnd), GetValue)
+        Set=> (WinMove(,,Value,, this.Hwnd))
+    }
+    H{
+        Get=> (WinGetPos(,,, &GetValue, this.Hwnd), GetValue)
+        Set=> (WinMove(,,,Value, this.Hwnd))
+    }
+    X2{
+        Get=> (WinGetPos(&x,,&w,, this.Hwnd), X + W)
+        Set=> WinMove(Value-this.W,,,, this.Hwnd)
+    }
+    Y2{
+        Get=> (WinGetPos(,&y,,,&h this.Hwnd), Y + H)
+        Set=> WinMove(,Value-this.H,,, this.Hwnd)
+    }
+    isAlwaysOnTop{
+        Get=> WinGetExStyle(this.Hwnd) & 0x8 ? True : False
+        Set=> WinSetAlwaysOnTop(Value, this.Hwnd)
+    }
+    isExist=> (WinExist(this.Hwnd) || this.HasOwnProp("AutoFindThisCriteria") && (this.Hwnd := WinExist(this.AutoFindThisCriteria)))
+    isHidden=> (DetectHiddenWindows(false), WinExist(this.Hwnd) && !WinExist("ahk_id" this.Hwnd))
+    isMinimized=> (WinGetMinMax(this.Hwnd)=-1)
+    isMaximized=> (WinGetMinMax(this.Hwnd)=1)
+    isNotMinMax=> (WinGetMinMax(this.Hwnd)=0)
+    CheckPosSize(x, y, w, h){ ; This exists since isMaximized is not reliable for detecting FullScreen applications.
+        WinGetPos(&wx, &wy, &ww, &wh, this.Hwnd)
+        Return(x=wx & y=wy & w=ww & h=wh)
+    }
+    SetMinMaxState(State){
+        Switch State {
+            Case -1: WinMinimize(this.Hwnd)
+            Case 0: WinRestore(this.Hwnd)
+            Case 1: WinMaximize(this.Hwnd)
+        }
+    }
+    SetOnTop(){
+        Critical(true)
+        PriorState := this.isAlwaysOnTop
+        this.isAlwaysOnTop := true
+        this.isAlwaysOnTop := PriorState
+    }
+    BatchOptions(PropObject){
+        WinMoveArr := [,,,,this.Hwnd]
+        For PropName, Value in PropObject.OwnProps(){
+            Switch PropName {
+                Case "x": WinMoveArr[1] := Value
+                Case "y": WinMoveArr[2] := Value
+                Case "w": WinMoveArr[3] := Value
+                Case "h": WinMoveArr[4] := Value
+                Default: this.%PropName% := Value
+            }
+        }
+        If WinMoveArr.Length>1
+            WinMove(WinMoveArr*)
+    }
+}
