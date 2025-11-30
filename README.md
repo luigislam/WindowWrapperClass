@@ -1,4 +1,4 @@
-# WindowWrapper
+# WindowWrapperClass
 Work in progress. Just converting some Win Functions and code snippets into an Object.Property wrapper because I'm lazy.
 
 ### Example
@@ -11,6 +11,6 @@ NotepadWrapper := WindowWrapperClass("ahk_exe notepad.exe", True)
 NotepadWrapper.isAlwaysOnTop := True ; sets this Window to be always on top
 
 #HotIf NotepadWrapper.isExist
-F1:: NotepadWrapper.x := 200
-F2:: NotepadWrapper.x := 400
-F3:: Msgbox(NotepadWrapper.x)
+F1:: NotepadWrapper.x := 200 ; moves the window's X position to these coordinates. You can also use the property to view its current x position.
+F2:: NotepadWrapper.isHidden := !NotepadWrapper.isHidden ; toggles to show/hide the Window.
+F3:: NotepadWrapper.ControlSendKeys("LCtrl a") ; sends the key combination LCtrl and a to the Notepad window to select all text inside of it.
