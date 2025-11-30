@@ -45,24 +45,31 @@ Class WindowWrapperClass {
     isMaximized=> (WinGetMinMax(this.Hwnd)=1)
     isNotMinMax=> (WinGetMinMax(this.Hwnd)=0)
     isMouseOver=> (MouseGetPos(,,&mWin), mWin=this.Hwnd)
-    CheckMouseOverClientRegion(x1, y1, x2, y2){
+    isActive=> WinActive(this.Hwnd)
+    CheckisMouseOverClientRegion(x1, y1, x2, y2){
         CoordMode("Mouse", "Client")
         MouseGetPos(&mx, &my, &mwin)
         Return (mwin = this.Hwnd and WindowWrapperClass.Range(mx, x1, x2) and WindowWrapperClass.Range(my, y1, y2))
     }
-    ControlSendKeys(KeyNames*){
+    ControlSendKeys(Space_Separated_KeyNames){
         StringControlSendDown := ""
         StringControlSendUp := ""
-        Loop KeyNames.Length {
-            StringControlSendDown .= "{" KeyNames[A_Index] " Down}"
-            StringControlSendUp .= "{" KeyNames[-A_Index] " Up}"
+        KeyNamesArr := StrSplit(Space_Separated_KeyNames, " ")
+        Loop KeyNamesArr.Length {
+            StringControlSendDown .= "{" KeyNamesArr[A_Index] " Down}"
+            StringControlSendUp .= "{" KeyNamesArr[-A_Index] " Up}"
         }
+        PriorActiveWindow := WinGetID("A")
+        PriorFocusedWindow := ControlGetFocus("A")
+        ControlFocus(this.Hwnd)
         ControlSend(StringControlSendDown,, this.Hwnd)
-        Sleep 25
+        Sleep 30
+        ControlFocus(this.Hwnd)
         ControlSend(StringControlSendUp,, this.Hwnd)
-    }
-    ControlClickPos(x, y){
-        ControlClick(Format("x{1} y{2}", x, y), this.Hwnd)
+        If PriorFocusedWindow
+            ControlFocus(PriorFocusedWindow)
+        if !WinActive(PriorActiveWindow)
+            WinActivate(PriorActiveWindow)
     }
     CheckisWindowSize(x, y, w, h){
         this.SetMinMaxState(0)
