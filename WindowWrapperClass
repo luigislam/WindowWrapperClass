@@ -71,8 +71,7 @@ Class WindowWrapperClass {
         MouseGetPos(&mx, &my, &mwin)
         Return (mwin = this.Hwnd and WindowWrapperClass.Fn_Range(mx, x1, x2) and WindowWrapperClass.Fn_Range(my, y1, y2))
     }
-    Fn_ControlSendKeys(Space_Separated_KeyNames){
-        Critical
+    Fn_ControlSendKeys(Control, Space_Separated_KeyNames){
         StringControlSendDown := ""
         StringControlSendUp := ""
         KeyNamesArr := StrSplit(Space_Separated_KeyNames, " ")
@@ -86,15 +85,17 @@ Class WindowWrapperClass {
             PriorActiveWindow := WinGetID("A")
             PriorFocusedControl := ControlGetFocus("A")
         }
-        WindowWrapperClass.Fn_ReleaseModifiers()
         If !WinActive(this.Hwnd)
             ControlFocus(this.Hwnd)
-        ControlSend(StringControlSendDown,, this.Hwnd)
+        ReleasedKeysArr := WindowWrapperClass.Fn_ReleaseModifiers()
+        ControlSend(StringControlSendDown,Control?, this.Hwnd)
+        WindowWrapperClass.Fn_RepressModifiers(ReleasedKeysArr)
         Sleep 30
         If !WinActive(this.Hwnd)
             ControlFocus(this.Hwnd)
-        ControlSend(StringControlSendUp,, this.Hwnd)
-        WindowWrapperClass.Fn_RepressModifiers()
+        ReleasedKeysArr := WindowWrapperClass.Fn_ReleaseModifiers()
+        ControlSend(StringControlSendUp,Control?, this.Hwnd)
+        WindowWrapperClass.Fn_RepressModifiers(ReleasedKeysArr)
         If isPriorWindowExist {
             If PriorFocusedControl
                 ControlFocus(PriorFocusedControl)
@@ -114,11 +115,18 @@ Class WindowWrapperClass {
             Case 1: (!(this.isMaximized) && WinMaximize(this.Hwnd))
         }
     }
-    Fn_SetOnTop(){
+    ; Don't use WinTitle if you want the Wrapper to operate on your window. I made the wintitle parameter so I could use this function on other window.
+    Fn_SetOnTop(WinTitle?){
         Critical(true)
-        PriorState := this.isAlwaysOnTop
-        this.isAlwaysOnTop := true
-        this.isAlwaysOnTop := PriorState
+        If IsSet(WinTitle){
+            WindowWrapperClass(WinTitle).Fn_SetOnTop()
+            return
+        }
+        Else {
+            PriorState := this.isAlwaysOnTop
+            this.isAlwaysOnTop := true
+            this.isAlwaysOnTop := PriorState
+        }
     }
     Fn_WinMove(x?, y?, w?, h?){
         this.SetMinMaxState(0)
@@ -133,18 +141,20 @@ Class WindowWrapperClass {
         Return (Min < Value and Value < Max)
     }
     Static Fn_ReleaseModifiers(){
+        ReleasedKeysArr := []
         Keys := "LAlt|LCtrl|LWin|LShift|RAlt|RCtrl|RWin|RShift"
         For Index, KeyName in StrSplit(Keys, "|"){
-            If GetKeyState(KeyName)
+            If GetKeyState(KeyName){
+                ReleasedKeysArr.Push(KeyName)
                 SendEvent "{Blind}{" KeyName " Up}" 
+            }
         }
+        Return ReleasedKeysArr
     }
 
-    Static Fn_RepressModifiers(){
-        Keys := "LAlt|LCtrl|LWin|LShift|RAlt|RCtrl|RWin|RShift"
-        For Index, KeyName in StrSplit(Keys, "|"){
-            If GetKeyState(KeyName)
-                SendEvent "{Blind}{" KeyName " Down}" 
+    Static Fn_RepressModifiers(ReleasedKeysArr){
+        For Index, KeyName in ReleasedKeysArr{
+            SendEvent "{Blind}{" KeyName " Down}"
         }
     }
 }
