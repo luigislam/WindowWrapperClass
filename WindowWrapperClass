@@ -1,9 +1,9 @@
-#Requires AutoHotkey v2.0
 Class WindowWrapperClass {
     __New(WinTitle, Boolean_AutoFindThisCritiera?){
         if IsSet(Boolean_AutoFindThisCritiera)
             this.AutoFindThisCriteria := WinTitle
         this.Hwnd := WinExist(WinTitle)
+        OnExit((*)=>this.isHidden:=false)
     }
     AutoFindThisCriteria := Unset
     Hwnd := ""
@@ -40,65 +40,111 @@ Class WindowWrapperClass {
         Set=> WinSetAlwaysOnTop(Value, this.Hwnd)
     }
     isExist=> (WinExist(this.Hwnd) || this.HasOwnProp("AutoFindThisCriteria") && (this.Hwnd := WinExist(this.AutoFindThisCriteria)))
-    isHidden=> (DetectHiddenWindows(false), WinExist(this.Hwnd) && !WinExist("ahk_id" this.Hwnd))
-    isMinimized=> (WinGetMinMax(this.Hwnd)=-1)
-    isMaximized=> (WinGetMinMax(this.Hwnd)=1)
-    isNotMinMax=> (WinGetMinMax(this.Hwnd)=0)
+    isHidden{
+        Get=> (DetectHiddenWindows(false), WinExist(this.Hwnd) && !WinExist("ahk_id" this.Hwnd))
+        Set=> Value=true && !this.isHidden && WinHide(this.Hwnd) or Value=false && this.isHidden && WinShow(this.Hwnd)
+    }
+    isMinimized{
+        Get=> (WinGetMinMax(this.Hwnd)=-1)
+        Set=> (Value ? WinMinimize(this.Hwnd) : WinRestore(this.Hwnd))
+    }
+    isMaximized{
+        Get=> (WinGetMinMax(this.Hwnd)=1)
+        Set=> (Value ? WinMaximize(this.Hwnd) : WinRestore(this.Hwnd))
+    }
+    isNotMinMax{
+        Get=> (WinGetMinMax(this.Hwnd)=0)
+        Set=> (Value && WinRestore(this.Hwnd))
+    }
     isMouseOver=> (MouseGetPos(,,&mWin), mWin=this.Hwnd)
-    isActive=> WinActive(this.Hwnd)
-    CheckisMouseOverClientRegion(x1, y1, x2, y2){
+    isActive{
+        Get=> WinActive(this.Hwnd)
+        Set=> Value && WinActivate(this.Hwnd)
+    }
+
+    Fn_ControlFocus(){
+        ControlFocus(this.Hwnd)
+    }
+
+    Fn_isMouseOverClientRegion(x1, y1, x2, y2){
         CoordMode("Mouse", "Client")
         MouseGetPos(&mx, &my, &mwin)
-        Return (mwin = this.Hwnd and WindowWrapperClass.Range(mx, x1, x2) and WindowWrapperClass.Range(my, y1, y2))
+        Return (mwin = this.Hwnd and WindowWrapperClass.Fn_Range(mx, x1, x2) and WindowWrapperClass.Fn_Range(my, y1, y2))
     }
-    ControlSendKeys(Space_Separated_KeyNames){
+    Fn_ControlSendKeys(Space_Separated_KeyNames){
+        Critical
         StringControlSendDown := ""
         StringControlSendUp := ""
         KeyNamesArr := StrSplit(Space_Separated_KeyNames, " ")
         Loop KeyNamesArr.Length {
-            StringControlSendDown .= "{" KeyNamesArr[A_Index] " Down}"
-            StringControlSendUp .= "{" KeyNamesArr[-A_Index] " Up}"
+            If KeyDown := KeyNamesArr[A_Index]
+                StringControlSendDown .= "{" KeyDown " Down}"
+            If KeyUp := KeyNamesArr[-A_Index]
+                StringControlSendUp .= "{" KeyUp " Up}"
         }
-        PriorActiveWindow := WinGetID("A")
-        PriorFocusedWindow := ControlGetFocus("A")
-        ControlFocus(this.Hwnd)
+        If isPriorWindowExist := WinExist("A"){
+            PriorActiveWindow := WinGetID("A")
+            PriorFocusedControl := ControlGetFocus("A")
+        }
+        WindowWrapperClass.Fn_ReleaseModifiers()
+        If !WinActive(this.Hwnd)
+            ControlFocus(this.Hwnd)
         ControlSend(StringControlSendDown,, this.Hwnd)
         Sleep 30
-        ControlFocus(this.Hwnd)
+        If !WinActive(this.Hwnd)
+            ControlFocus(this.Hwnd)
         ControlSend(StringControlSendUp,, this.Hwnd)
-        If PriorFocusedWindow
-            ControlFocus(PriorFocusedWindow)
-        if !WinActive(PriorActiveWindow)
-            WinActivate(PriorActiveWindow)
+        WindowWrapperClass.Fn_RepressModifiers()
+        If isPriorWindowExist {
+            If PriorFocusedControl
+                ControlFocus(PriorFocusedControl)
+            If !WinActive(PriorActiveWindow)
+                WinActivate(PriorActiveWindow)
+        }
     }
-    CheckisWindowSize(x, y, w, h){
+    Fn_isWindowThisSize(x, y, w, h){
         this.SetMinMaxState(0)
         WinGetPos(&wx, &wy, &ww, &wh, this.Hwnd)
         Return(x=wx & y=wy & w=ww & h=wh)
     }
-    SetMinMaxState(State){
+    Fn_SetMinMaxState(State){
         Switch State {
             Case -1: (!(this.isMinimized) && WinMinimize(this.Hwnd))
             Case 0: (!(this.isNotMinMax) && WinRestore(this.Hwnd))
             Case 1: (!(this.isMaximized) && WinMaximize(this.Hwnd))
         }
     }
-    SetOnTop(){
+    Fn_SetOnTop(){
         Critical(true)
         PriorState := this.isAlwaysOnTop
         this.isAlwaysOnTop := true
         this.isAlwaysOnTop := PriorState
     }
-    WinMove(x?, y?, w?, h?){
+    Fn_WinMove(x?, y?, w?, h?){
         this.SetMinMaxState(0)
         If !this.CheckisWindowSize(x, y, w, h)
             WinMove(x?, y?, w?, h?, this.Hwnd)
     }
-    BatchOptions(ObjectWithPropValues){
+    Fn_BatchOptions(ObjectWithPropValues){
         For PropName, Value in ObjectWithPropValues.HasOwnProp()
             this.%PropName% := Value
     }
-    Static Range(Value, Min, Max){
+    Static Fn_Range(Value, Min, Max){
         Return (Min < Value and Value < Max)
+    }
+    Static Fn_ReleaseModifiers(){
+        Keys := "LAlt|LCtrl|LWin|LShift|RAlt|RCtrl|RWin|RShift"
+        For Index, KeyName in StrSplit(Keys, "|"){
+            If GetKeyState(KeyName)
+                SendEvent "{Blind}{" KeyName " Up}" 
+        }
+    }
+
+    Static Fn_RepressModifiers(){
+        Keys := "LAlt|LCtrl|LWin|LShift|RAlt|RCtrl|RWin|RShift"
+        For Index, KeyName in StrSplit(Keys, "|"){
+            If GetKeyState(KeyName)
+                SendEvent "{Blind}{" KeyName " Down}" 
+        }
     }
 }
