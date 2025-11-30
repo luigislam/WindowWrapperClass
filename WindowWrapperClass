@@ -3,7 +3,7 @@ Class WindowWrapperClass {
         if IsSet(Boolean_AutoFindThisCritiera)
             this.AutoFindThisCriteria := WinTitle
         this.Hwnd := WinExist(WinTitle)
-        OnExit((*)=>this.isHidden:=false)
+        OnExit((*)=>this.isExist && this.isHidden:=false)
     }
     AutoFindThisCriteria := Unset
     Hwnd := ""
