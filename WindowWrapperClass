@@ -104,7 +104,7 @@ Class WindowWrapperClass {
         }
     }
     Fn_isWindowThisSize(x, y, w, h){
-        this.SetMinMaxState(0)
+        this.Fn_SetMinMaxState(0)
         WinGetPos(&wx, &wy, &ww, &wh, this.Hwnd)
         Return(x=wx & y=wy & w=ww & h=wh)
     }
@@ -115,21 +115,74 @@ Class WindowWrapperClass {
             Case 1: (!(this.isMaximized) && WinMaximize(this.Hwnd))
         }
     }
-    ; Don't use WinTitle if you want the Wrapper to operate on your window. I made the wintitle parameter so I could use this function on other window.
     Fn_SetOnTop(WinTitle?){
-        Critical(true)
-        If IsSet(WinTitle){
-            WindowWrapperClass(WinTitle).Fn_SetOnTop()
-            return
-        }
-        Else {
+        If !isSet(WinTitle){
             PriorState := this.isAlwaysOnTop
             this.isAlwaysOnTop := true
             this.isAlwaysOnTop := PriorState
         }
+        Else {
+            WindowToStartShuffling := WinGetID(WinTitle)
+            WindowListArr:=WinGetList()
+            isFoundYet := false
+            StartIndex := 0
+            thisIndex := 0
+            Loop WindowListArr.Length {
+                Value := WindowListArr[-A_Index]
+                If Value = WindowToStartShuffling
+                    StartIndex := A_Index
+                If Value = this.Hwnd
+                    ThisIndex := A_Index
+            }
+            If ThisIndex - StartIndex = 1 ; If this window is already on top of what we're looking for...
+                return ; exit function
+            Loop WindowListArr.Length {
+                Value := WindowListArr[-A_Index]
+                If !WinExist(Value) or Value = this.Hwnd or StartIndex > A_Index
+                    continue
+                WindowWrapperClass(Value).Fn_SetOnTop()
+                if Value = WinGetID(WinTitle)
+                    this.Fn_SetOnTop()
+            }
+        }
+    }
+    Fn_SetOnBottom(WinTitle){
+        If !isSet(WinTitle){
+            WinMoveBottom(this.Hwnd)
+        }
+        Else {
+            WindowToStartShuffling := WinGetID(WinTitle)
+            WindowListArr:=WinGetList()
+            isFoundYet := false
+            StartIndex := 0
+            thisIndex := 0
+            Loop WindowListArr.Length {
+                Value := WindowListArr[-A_Index]
+                If Value = WindowToStartShuffling
+                    StartIndex := A_Index
+                If Value = this.Hwnd
+                    ThisIndex := A_Index
+            }
+            If ThisIndex - StartIndex = -1
+                return 
+            Loop WindowListArr.Length {
+                Value := WindowListArr[-A_Index]
+                If !WinExist(Value) or Value = this.Hwnd or StartIndex > A_Index
+                    continue
+                if Value = WinGetID(WinTitle)
+                    this.Fn_SetOnTop()
+                WindowWrapperClass(Value).Fn_SetOnTop()
+                ; ToolTip WinGetTitle(Value)
+                ; Sleep 1000
+            }
+        }
+    }
+    Fn_SetOtherWindowOnTop(WinTitle){
+        WindowWrapperClass(WinTitle).Fn_SetOnTop()
+
     }
     Fn_WinMove(x?, y?, w?, h?){
-        this.SetMinMaxState(0)
+        this.Fn_SetMinMaxState(0)
         If !this.CheckisWindowSize(x, y, w, h)
             WinMove(x?, y?, w?, h?, this.Hwnd)
     }
