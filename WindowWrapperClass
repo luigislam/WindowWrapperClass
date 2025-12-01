@@ -115,71 +115,54 @@ Class WindowWrapperClass {
             Case 1: (!(this.isMaximized) && WinMaximize(this.Hwnd))
         }
     }
-    Fn_SetOnTop(WinTitle?){
+    Fn_SetAbove(WinTitle?){
         If !isSet(WinTitle){
             PriorState := this.isAlwaysOnTop
             this.isAlwaysOnTop := true
             this.isAlwaysOnTop := PriorState
         }
         Else {
-            WindowToStartShuffling := WinGetID(WinTitle)
+            WinTitle := WinGetID(WinTitle)
+            TargetIndex := WindowWrapperClass.Fn_GetWindowStackPosition(WinTitle)
+            ThisIndex := WindowWrapperClass.Fn_GetWindowStackPosition(this.Hwnd)
+            If TargetIndex - ThisIndex = -1 ; if TargetIndex is 1 layer above this.Hwnd ...
+                Return
             WindowListArr:=WinGetList()
-            isFoundYet := false
-            StartIndex := 0
-            thisIndex := 0
             Loop WindowListArr.Length {
-                Value := WindowListArr[-A_Index]
-                If Value = WindowToStartShuffling
-                    StartIndex := A_Index
-                If Value = this.Hwnd
-                    ThisIndex := A_Index
-            }
-            If ThisIndex - StartIndex = 1 ; If this window is already on top of what we're looking for...
-                return ; exit function
-            Loop WindowListArr.Length {
-                Value := WindowListArr[-A_Index]
-                If !WinExist(Value) or Value = this.Hwnd or StartIndex > A_Index
+                CurrentHWND := WindowListArr[-A_Index]
+                If (A_Index < TargetIndex) or (CurrentHWND = this.Hwnd)
                     continue
-                WindowWrapperClass(Value).Fn_SetOnTop()
-                if Value = WinGetID(WinTitle)
-                    this.Fn_SetOnTop()
+                WindowWrapperClass.Fn_SetAbove(CurrentHWND)
+                If (A_Index = TargetIndex)
+                    this.Fn_SetAbove()
             }
         }
     }
-    Fn_SetOnBottom(WinTitle){
+    Fn_isAbove(WinTitle){
+        WinTitleIndex := WindowWrapperClass.Fn_GetWindowStackPosition(WinTitle)
+        ThisIndex := WindowWrapperClass.Fn_GetWindowStackPosition(this.Hwnd)
+        Return (WinTitleIndex < ThisIndex)
+    }
+    Fn_SetBelow(WinTitle){
         If !isSet(WinTitle){
             WinMoveBottom(this.Hwnd)
         }
         Else {
-            WindowToStartShuffling := WinGetID(WinTitle)
+            WinTitle := WinGetID(WinTitle)
+            TargetIndex := WindowWrapperClass.Fn_GetWindowStackPosition(WinTitle)
+            ThisIndex := WindowWrapperClass.Fn_GetWindowStackPosition(this.Hwnd)
+            If TargetIndex - ThisIndex = 1 ; if TargetIndex is 1 layer above this.Hwnd ...
+                Return
             WindowListArr:=WinGetList()
-            isFoundYet := false
-            StartIndex := 0
-            thisIndex := 0
             Loop WindowListArr.Length {
-                Value := WindowListArr[-A_Index]
-                If Value = WindowToStartShuffling
-                    StartIndex := A_Index
-                If Value = this.Hwnd
-                    ThisIndex := A_Index
-            }
-            If ThisIndex - StartIndex = -1
-                return 
-            Loop WindowListArr.Length {
-                Value := WindowListArr[-A_Index]
-                If !WinExist(Value) or Value = this.Hwnd or StartIndex > A_Index
+                CurrentHWND := WindowListArr[-A_Index]
+                If (A_Index < TargetIndex) or (CurrentHWND = this.Hwnd)
                     continue
-                if Value = WinGetID(WinTitle)
-                    this.Fn_SetOnTop()
-                WindowWrapperClass(Value).Fn_SetOnTop()
-                ; ToolTip WinGetTitle(Value)
-                ; Sleep 1000
+                If (A_Index = TargetIndex)
+                        this.Fn_SetAbove()
+                WindowWrapperClass.Fn_SetAbove(CurrentHWND)
             }
         }
-    }
-    Fn_SetOtherWindowOnTop(WinTitle){
-        WindowWrapperClass(WinTitle).Fn_SetOnTop()
-
     }
     Fn_WinMove(x?, y?, w?, h?){
         this.Fn_SetMinMaxState(0)
@@ -208,6 +191,23 @@ Class WindowWrapperClass {
     Static Fn_RepressModifiers(ReleasedKeysArr){
         For Index, KeyName in ReleasedKeysArr{
             SendEvent "{Blind}{" KeyName " Down}"
+        }
+    }
+
+    Static Fn_SetAbove(WinTitle){
+        If PriorState := (WinGetExStyle(WinTitle) & 0x8 ? True : False)
+            Return
+        WinSetAlwaysOnTop(True, WinTitle)
+        WinSetAlwaysOnTop(false, WinTitle)
+    }
+
+    Static Fn_GetWindowStackPosition(WinTitle){
+        WinListArr := WinGetList()
+        Loop WinListArr.Length {
+            CurrentHwnd := WinListArr[-A_Index]
+            if CurrentHwnd = WinGetID(WinTitle){
+                Return A_Index
+            }
         }
     }
 }
