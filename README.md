@@ -1,5 +1,11 @@
 ### WindowWrapperClass
-Work in progress. Just converting some Win Functions and code snippets into an Object.Property wrapper because I'm lazy.
+Work in progress. It is "mostly" converting some Win Functions and code snippets into an Object.Property wrapper because I'm lazy.
+Things you can do with this Class:
+1. Easily get simple information about its size, position, if its hidden/active/minmax.
+2. Easily know if your mouse is over the window or within a specific client area.
+3. Much easier to manage a specific window since it uses the HWND and if that window stops existing then this class can find a new HWND from the original wintitle criteria used.
+4. Restack windows so you can bring a window to the foreground without focusing or making the window active.
+5. Has an OnExit callback for the Instance Object to unhide the window when the script closes.
 
 ### Example
 ```
