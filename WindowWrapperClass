@@ -66,10 +66,10 @@ Class WindowWrapperClass {
         ControlFocus(this.Hwnd)
     }
 
-    Fn_isMouseOverClientRegion(x1, y1, x2, y2){
+    Fn_isMouseOverClientRegion(x, y, w, h){
         CoordMode("Mouse", "Client")
         MouseGetPos(&mx, &my, &mwin)
-        Return (mwin = this.Hwnd and WindowWrapperClass.Fn_Range(mx, x1, x2) and WindowWrapperClass.Fn_Range(my, y1, y2))
+        Return (mwin = this.Hwnd and WindowWrapperClass.Fn_Range(mx, x, x+w) and WindowWrapperClass.Fn_Range(my, y, y+h))
     }
     Fn_ControlSendKeys(Control, Space_Separated_KeyNames){
         StringControlSendDown := ""
