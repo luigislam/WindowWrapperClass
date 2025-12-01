@@ -22,10 +22,10 @@ Loop {
 #HotIf NotepadWrapper.isExist
 F1:: NotepadWrapper.x := 200 ; moves the window's X position to these coordinates. You can also use the property to view its current x position.
 F2:: NotepadWrapper.isHidden := !NotepadWrapper.isHidden ; toggles to show/hide the Window.
-F3:: NotepadWrapper.ControlSendKeys("Edit1", "LCtrl a") ; sends the key combination LCtrl and a to the Notepad window to select all text inside of it.
+F3:: NotepadWrapper.Fn_ControlSendKeys("Edit1", "LCtrl a") ; sends the key combination LCtrl and a to the Notepad window to select all text inside of it.
 F4::{ ; Re-orders the windows to place Notepad behind/over your current active window.
-    If NotepadWrapper.isOntop("A")
-       NotepadWrapper.SetBelow("A")
+    If NotepadWrapper.Fn_isOntop("A")
+       NotepadWrapper.Fn_SetBelow("A")
     Else
-        NotepadWrapper.SetAbove("A")
+        NotepadWrapper.Fn_SetAbove("A")
 }
