@@ -1,4 +1,4 @@
-# WindowWrapperClass
+[# WindowWrapperClass
 Work in progress. Just converting some Win Functions and code snippets into an Object.Property wrapper because I'm lazy.
 
 ### Example
@@ -12,20 +12,16 @@ NotepadWrapper := WindowWrapperClass("ahk_exe notepad.exe", True)
 NotepadWrapper.isAlwaysOnTop := True ; sets this Window to be always on top
 
 Loop {
-    If NotepadWrapper.isExist
-        Tooltip("Mouse is currently over the Notepad Window!")
-    Else
-        Tooltip
-    Sleep 100
+    If NotepadWrapper.Fn_isMouseOverClientRegion(0, 0, 100, 100)
+        ToolTip "Mouse is over Client Area!",,, 2
+    Sleep 1
 }
 
+
 #HotIf NotepadWrapper.isExist
-F1:: NotepadWrapper.x := 200 ; moves the window's X position to these coordinates. You can also use the property to view its current x position.
+F1:: NotepadWrapper.Fn_isAbove("a") ? NotepadWrapper.Fn_SetBelow("a") : NotepadWrapper.Fn_SetAbove("a") ; Re-orders the windows to place Notepad behind/over your current active window.
 F2:: NotepadWrapper.isHidden := !NotepadWrapper.isHidden ; toggles to show/hide the Window.
-F3:: NotepadWrapper.Fn_ControlSendKeys("Edit1", "LCtrl a") ; sends the key combination LCtrl and a to the Notepad window to select all text inside of it.
-F4::{ ; Re-orders the windows to place Notepad behind/over your current active window.
-    If NotepadWrapper.Fn_isOntop("A")
-       NotepadWrapper.Fn_SetBelow("A")
-    Else
-        NotepadWrapper.Fn_SetAbove("A")
-}
+F3:: NotepadWrapper.x := 200 ; moves the window's X position to these coordinates. You can also use the property to view its current x position.
+
+#HotIf NotepadWrapper.isExist and NotepadWrapper.isMouseOver
+RButton:: Tooltip "Right Clicked over Notepad window"
