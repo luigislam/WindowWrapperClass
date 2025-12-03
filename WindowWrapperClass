@@ -44,17 +44,9 @@ Class WindowWrapperClass {
         Get=> (DetectHiddenWindows(false), WinExist(this.Hwnd) && !WinExist("ahk_id" this.Hwnd))
         Set=> Value=true && !this.isHidden && WinHide(this.Hwnd) or Value=false && this.isHidden && WinShow(this.Hwnd)
     }
-    isMinimized{
-        Get=> (WinGetMinMax(this.Hwnd)=-1)
-        Set=> (Value ? WinMinimize(this.Hwnd) : WinRestore(this.Hwnd))
-    }
-    isMaximized{
-        Get=> (WinGetMinMax(this.Hwnd)=1)
-        Set=> (Value ? WinMaximize(this.Hwnd) : WinRestore(this.Hwnd))
-    }
-    isNotMinMax{
-        Get=> (WinGetMinMax(this.Hwnd)=0)
-        Set=> (Value && WinRestore(this.Hwnd))
+    isMinMax{
+        Get=> WinGetMinMax(this.Hwnd)
+        Set=> Value=-1 ? WinMinimize(this.Hwnd) : Value=0 ? WinRestore(this.Hwnd) : Value=1 ? WinMaximize(this.Hwnd) : ""
     }
     isMouseOver=> (MouseGetPos(,,&mWin), mWin=this.Hwnd)
     isActive{
@@ -86,13 +78,13 @@ Class WindowWrapperClass {
             PriorFocusedControl := ControlGetFocus("A")
         }
         If !WinActive(this.Hwnd)
-            ControlFocus(this.Hwnd)
+            ControlFocus(Control??this.Hwnd)
         ReleasedKeysArr := WindowWrapperClass.Fn_ReleaseModifiers()
         ControlSend(StringControlSendDown,Control?, this.Hwnd)
         WindowWrapperClass.Fn_RepressModifiers(ReleasedKeysArr)
         Sleep 30
         If !WinActive(this.Hwnd)
-            ControlFocus(this.Hwnd)
+            ControlFocus(Control??this.Hwnd)
         ReleasedKeysArr := WindowWrapperClass.Fn_ReleaseModifiers()
         ControlSend(StringControlSendUp,Control?, this.Hwnd)
         WindowWrapperClass.Fn_RepressModifiers(ReleasedKeysArr)
