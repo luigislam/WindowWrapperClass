@@ -71,7 +71,7 @@ Class WindowWrapperClass {
         MouseGetPos(&mx, &my, &mwin)
         Return (mwin = this.Hwnd and WindowWrapperClass.Fn_Range(mx, x, x+w) and WindowWrapperClass.Fn_Range(my, y, y+h))
     }
-    Fn_ControlSendKeys(Control, Space_Separated_KeyNames){
+    Fn_ControlSendKeys(Space_Separated_KeyNames, Control?){
         StringControlSendDown := ""
         StringControlSendUp := ""
         KeyNamesArr := StrSplit(Space_Separated_KeyNames, " ")
@@ -166,7 +166,7 @@ Class WindowWrapperClass {
     }
     Fn_WinMove(x?, y?, w?, h?){
         this.Fn_SetMinMaxState(0)
-        If !this.CheckisWindowSize(x, y, w, h)
+        If !this.Fn_isWindowThisSize(x, y, w, h)
             WinMove(x?, y?, w?, h?, this.Hwnd)
     }
     Fn_BatchOptions(ObjectWithPropValues){
