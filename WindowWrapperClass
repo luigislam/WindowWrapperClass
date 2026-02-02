@@ -63,6 +63,160 @@ Class WindowWrapperClass {
         MouseGetPos(&mx, &my, &mwin)
         Return (mwin = this.Hwnd and WindowWrapperClass.Fn_Range(mx, x, x+w) and WindowWrapperClass.Fn_Range(my, y, y+h))
     }
+
+    Fn_isWindowThisPos(x?, y?, w?, h?){
+        WinGetPos(&cx, &cy, &cw, &ch, this.Hwnd)
+        TempArr1 := [x?,y?,w?,h?]
+        TempArr2 := [cx, cy, cw, ch]
+        For index, ParamValue, in TempArr1 {
+            if TempArr1.Has(index) && TempArr1[index] != TempArr2[index]
+                Return false
+        }
+        Return True
+    }
+    Fn_SetAbove(WinTitle?){
+        If !isSet(WinTitle){
+            PriorState := this.isAlwaysOnTop
+            this.isAlwaysOnTop := true
+            this.isAlwaysOnTop := PriorState
+        }
+        Else {
+            WinTitle := WinGetID(WinTitle)
+            TargetIndex := WindowWrapperClass.Fn_GetWindowStackPosition(WinTitle)
+            ThisIndex := WindowWrapperClass.Fn_GetWindowStackPosition(this.Hwnd)
+            If TargetIndex - ThisIndex = -1 ; if TargetIndex is 1 layer above this.Hwnd ...
+                Return
+            WindowListArr:=WinGetList()
+            Loop WindowListArr.Length {
+                CurrentHWND := WindowListArr[-A_Index]
+                If (A_Index < TargetIndex) or (CurrentHWND = this.Hwnd)
+                    continue
+                WindowWrapperClass.Fn_SetAbove(CurrentHWND)
+                If (A_Index = TargetIndex)
+                    this.Fn_SetAbove()
+            }
+        }
+    }
+    Fn_isAbove(WinTitle){
+        WinTitleIndex := WindowWrapperClass.Fn_GetWindowStackPosition(WinTitle)
+        ThisIndex := WindowWrapperClass.Fn_GetWindowStackPosition(this.Hwnd)
+        Return (WinTitleIndex < ThisIndex)
+    }
+    Fn_SetBelow(WinTitle){
+        If !isSet(WinTitle){
+            WinMoveBottom(this.Hwnd)
+        }
+        Else {
+            WinTitle := WinGetID(WinTitle)
+            TargetIndex := WindowWrapperClass.Fn_GetWindowStackPosition(WinTitle)
+            ThisIndex := WindowWrapperClass.Fn_GetWindowStackPosition(this.Hwnd)
+            If TargetIndex - ThisIndex = 1 ; if TargetIndex is 1 layer above this.Hwnd ...
+                Return
+            WindowListArr:=WinGetList()
+            Loop WindowListArr.Length {
+                CurrentHWND := WindowListArr[-A_Index]
+                If (A_Index < TargetIndex) or (CurrentHWND = this.Hwnd)
+                    continue
+                If (A_Index = TargetIndex)
+                        this.Fn_SetAbove()
+                WindowWrapperClass.Fn_SetAbove(CurrentHWND)
+            }
+        }
+    }
+    Fn_WinMove(x?, y?, w?, h?){
+        this.isMinMax := 0
+        If !this.Fn_isWindowThisPos(x?, y?, w?, h?)
+            WinMove(x?, y?, w?, h?, this.Hwnd)
+    }
+    Fn_BatchOptions(ObjectWithPropValues){
+        For PropName, Value in ObjectWithPropValues.HasOwnProp()
+            this.%PropName% := Value
+    }
+    Static Fn_Range(Value, Min, Max){
+        Return (Min < Value and Value < Max)
+    }
+
+    Static Fn_SetAbove(WinTitle){
+        If StateisAlwaysOnTop := (WinGetExStyle(WinTitle) & 0x8 ? True : False)
+            Return
+        WinSetAlwaysOnTop(True, WinTitle)
+        WinSetAlwaysOnTop(false, WinTitle)
+    }
+
+    Static Fn_GetWindowStackPosition(WinTitle){
+        WinListArr := WinGetList()
+        Loop WinListArr.Length {
+            CurrentHwnd := WinListArr[-A_Index]
+            if CurrentHwnd = WinGetID(WinTitle){
+                Return A_Index
+            }
+        }
+    }
+}Class WindowWrapperClass {
+    __New(WinTitle, Boolean_AutoFindThisCritiera?){
+        if IsSet(Boolean_AutoFindThisCritiera)
+            this.AutoFindThisCriteria := WinTitle
+        this.Hwnd := WinExist(WinTitle)
+        OnExit((*)=>this.isExist && this.isHidden:=false)
+    }
+    AutoFindThisCriteria := Unset
+    Hwnd := ""
+    Title{
+        Get=> WinGetTitle(this.Hwnd)
+        Set=> WinSetTitle(Value, this.Hwnd)
+    }
+    X{
+        Get=> (WinGetPos(&GetValue,,,, this.Hwnd), GetValue)
+        Set=> (WinMove(Value,,,, this.Hwnd))
+    }
+    Y{
+        Get=> (WinGetPos(, &GetValue,,, this.Hwnd), GetValue)
+        Set=> (WinMove(,Value,,, this.Hwnd))
+    }
+    W{
+        Get=> (WinGetPos(,, &GetValue,, this.Hwnd), GetValue)
+        Set=> (WinMove(,,Value,, this.Hwnd))
+    }
+    H{
+        Get=> (WinGetPos(,,, &GetValue, this.Hwnd), GetValue)
+        Set=> (WinMove(,,,Value, this.Hwnd))
+    }
+    X2{
+        Get=> (WinGetPos(&x,,&w,, this.Hwnd), X + W)
+        Set=> WinMove(Value-this.W,,,, this.Hwnd)
+    }
+    Y2{
+        Get=> (WinGetPos(,&y,,,&h this.Hwnd), Y + H)
+        Set=> WinMove(,Value-this.H,,, this.Hwnd)
+    }
+    isAlwaysOnTop{
+        Get=> WinGetExStyle(this.Hwnd) & 0x8 ? True : False
+        Set=> WinSetAlwaysOnTop(Value, this.Hwnd)
+    }
+    isExist=> (WinExist(this.Hwnd) || this.HasOwnProp("AutoFindThisCriteria") && (this.Hwnd := WinExist(this.AutoFindThisCriteria)))
+    isHidden{
+        Get=> (DetectHiddenWindows(false), WinExist(this.Hwnd) && !WinExist("ahk_id" this.Hwnd))
+        Set=> Value=true && !this.isHidden && WinHide(this.Hwnd) or Value=false && this.isHidden && WinShow(this.Hwnd)
+    }
+    isMinMax{
+        Get=> WinGetMinMax(this.Hwnd)
+        Set=> Value=-1 ? WinMinimize(this.Hwnd) : Value=0 ? WinRestore(this.Hwnd) : Value=1 ? WinMaximize(this.Hwnd) : ""
+    }
+    isMouseOver=> (MouseGetPos(,,&mWin), mWin=this.Hwnd)
+    isActive{
+        Get=> WinActive(this.Hwnd)
+        Set=> Value && WinActivate(this.Hwnd)
+    }
+
+    Fn_ControlFocus(){
+        ControlFocus(this.Hwnd)
+    }
+
+    Fn_isMouseOverClientRegion(x, y, w, h){
+        CoordMode("Mouse", "Client")
+        MouseGetPos(&mx, &my, &mwin)
+        Return (mwin = this.Hwnd and WindowWrapperClass.Fn_Range(mx, x, x+w) and WindowWrapperClass.Fn_Range(my, y, y+h))
+    }
     Fn_ControlSendKeys(Space_Separated_KeyNames, Control?){
         StringControlSendDown := ""
         StringControlSendUp := ""
