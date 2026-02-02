@@ -1,5 +1,5 @@
 ### WindowWrapperClass
-Work in progress. It is "mostly" converting some Win Functions and code snippets into an Object.Property wrapper because I'm lazy.
+For my personal use. It is "mostly" converting some Win Functions and code snippets into an Object.Property wrapper because I'm lazy.
 Things you can do with this Class:
 1. Easily get simple information about its size, position, if its hidden/active/minmax.
 2. Easily know if your mouse is over the window or within a specific client area.
