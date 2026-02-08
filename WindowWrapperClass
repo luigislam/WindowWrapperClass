@@ -1,3 +1,4 @@
+
 Class WindowWrapperClass {
     __New(WinTitle, Boolean_AutoFindThisCritiera?){
         if IsSet(Boolean_AutoFindThisCritiera)
@@ -66,7 +67,11 @@ Class WindowWrapperClass {
 
     Fn_isWindowThisPos(x?, y?, w?, h?){
         WinGetPos(&cx, &cy, &cw, &ch, this.Hwnd)
-        TempArr1 := [x?,y?,w?,h?]
+        If Type(x) = "Object" {
+            TempArr1 := WindowWrapperClass.Fn_PropToArr(x, ["x", "y", "w", "h"])
+        }
+        Else
+            TempArr1 := [x?,y?,w?,h?]
         TempArr2 := [cx, cy, cw, ch]
         For index, ParamValue, in TempArr1 {
             if TempArr1.Has(index) && TempArr1[index] != TempArr2[index]
@@ -125,8 +130,19 @@ Class WindowWrapperClass {
     }
     Fn_WinMove(x?, y?, w?, h?){
         this.isMinMax := 0
-        If !this.Fn_IsWindowThisPos(x?, y?, w?, h?)
-            WinMove(x?, y?, w?, h?, this.Hwnd)
+        If Type(x) = "Object" {
+            WinPosArr := WindowWrapperClass.Fn_PropToArr(x, ["x", "y", "w", "h"])
+            If !this.Fn_IsWindowThisPos(WinPosArr*){
+                WinPosArr.Push(this.Hwnd)
+                WinMove(WinPosArr*)
+            }
+
+        }
+        Else {
+            If !this.Fn_IsWindowThisPos(x?, y?, w?, h?)
+                WinMove(x?, y?, w?, h?, this.Hwnd)
+
+        }
     }
     Fn_BatchOptions(ObjectWithPropValues){
         For PropName, Value in ObjectWithPropValues.HasOwnProp()
@@ -151,5 +167,16 @@ Class WindowWrapperClass {
                 Return A_Index
             }
         }
+    }
+    Static Fn_PropToArr(thisObject, ArrayOfKeyNames){
+        TempArr := []
+        Loop ArrayOfKeyNames.Length
+            TempArr.Push(Unset)
+        For Index, PropName in ArrayOfKeyNames{
+            If thisObject.HasOwnProp(PropName){
+                TempArr[Index] := thisObject.%PropName%
+            }
+        }
+        Return TempArr
     }
 }
